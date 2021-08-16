@@ -2,6 +2,25 @@
 par(mar=c(1,1,1,1))
 par(oma=c(2,2,2,2)) #:D 
 
+#Question 1: Density
+get_fx = function(x){
+  
+  #Student number
+  sn = c(1,9,8,3,1,6,2) #Other check sn = c(1,9,9,0,6,2,7)
+  #Density
+  a = sn[7]*exp(-sin((sn[1]*x^2)/(15-sn[1])) - ((x-3-(sn[2]*pi))^2)/(2*(5+sn[3])^2) )
+  b = 2*(1+sn[7])*exp(-((x^2)/32))
+  c = (10-sn[7])*exp( -cos((sn[4]*x^2)/(15+sn[4])) - ((x+3+(sn[5]*pi))^2)/(2*(5+sn[6])^2))
+  fx = a+b+c
+  fx
+}
+
+#fx - apply
+x = seq(-50,80,length=1000) 
+fx = get_fx(x)
+length(fx)
+norm_fx = normalize(fx, range = c(0,1))
+
 #Global params#
 N = 100000 #0
 sd_sim_an = c(0.001, 0.01, 0.1, 1, 10, 100)
