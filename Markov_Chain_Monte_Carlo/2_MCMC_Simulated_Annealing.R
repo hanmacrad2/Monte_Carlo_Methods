@@ -28,6 +28,7 @@ list_alpha = c(1.001, 1.01, 1.1, 2, 10)
 
 #Function
 sim_anneal_1 = function(N, x0 = 0, beta1 = 1, alpha = 1.001, sigma = 1){
+  
   #Containers
   x = vector('numeric', N)
   fn = numeric(N)
