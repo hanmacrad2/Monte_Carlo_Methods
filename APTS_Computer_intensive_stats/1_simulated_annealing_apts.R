@@ -147,7 +147,8 @@ simulated_annealing_multi = function(N = 2000, x0=as.vector(c(0,0)), Sigma = dia
   list(X, fn)
 }
 
-simulated_annealing_minimum_multi_param = function(N = 2000, x0=as.vector(c(0,0)), Sigma = diag(1,nrow =2), beta1 = 1, alpha = 1.001){
+#Simulated annealing to find the minimum of a multi paramater function
+simulated_annealing_minimum_multi_param = function(N = 10000, x0=as.vector(c(0,0)), Sigma = diag(1,nrow =2), beta1 = 1, alpha = 1.001){
   
   X <- matrix(0, nrow=2, ncol= N)
   X[,1] <- x0
@@ -155,6 +156,7 @@ simulated_annealing_minimum_multi_param = function(N = 2000, x0=as.vector(c(0,0)
   fx_current = get_fx(X)
   beta_current = beta1
   fn = 0
+  count_accept = 0
   count_na = 0 
   
   #Implement Markov Chain in loop 
@@ -175,6 +177,7 @@ simulated_annealing_minimum_multi_param = function(N = 2000, x0=as.vector(c(0,0)
     else if ((alpha_accept > runif(1)) & abs(x_new[1]) <= 3 & abs(x_new[2]) <= 2){ #Criterion for acceptance -
       x_current <- x_new #If holds set next sample in the chain as the proposed sample
       fx_current <- fx_new
+      count_accept = count_accept + 1
     }
     X[i] = x_current #If not the next sample in the chain is again set to as the sample value at previous step
     fn[i] = fx_current
@@ -182,10 +185,17 @@ simulated_annealing_minimum_multi_param = function(N = 2000, x0=as.vector(c(0,0)
     
     
   }
+  #Print rates 
+  rate_accept = count_accept/N
+  print('count accept')
+  print(count_accept)
+  print('Rate accept')
+  print(rate_accept)
+  
   print('count_na')
   print(count_na)
   
-  list(X, fn)
+  list(X, fn, rate_accept)
 }
 
 
@@ -195,89 +205,57 @@ N = 10000
 vec_sm = simulated_annealing_minimum_multi_param(N)
 head(vec_sm[1])
 #Plot trace of X
-plot.ts(vec_sm[[1]], 
-        xlab = 't', ylab = 'Xt', main = 'Trace Plot of Xt', cex.lab=1.5)
-plot.ts(vec_sm[[1]], 
-        xlab = 't', ylab = 'Xt', main = 'Trace Plot of Xt', cex.lab=1.5)
+plot.ts(vec_sm[[1]][1,], 
+        xlab = 't', ylab = 'X1', col = 'green',main = 'Trace Plot of X1', cex.lab=1.5)
+plot.ts(vec_sm[[1]][2,], 
+        xlab = 't', ylab = 'X2', col = 'red', main = 'Trace Plot of X2', cex.lab=1.5)
 
 #Plot Trace of fx
 plot.ts(vec_sm[[2]], 
         xlab = 't', ylab = 'f(Xt)', main = 'Trace Plot of f(Xt)', cex.lab=1.5, col = 'blue')
 
-#Plot cumulative mean
+#Plot cumulative mean of x1, x2, f
+par(mfrow=c(2,1))
+x1_mean = cumsum(vec_sm[[1]][1,])/seq_along(vec_sm[[1]][1,])
+plot(seq_along(vec_sm[[1]][1,]), x1_mean, xlab = 'Time', ylab = 'Mean of X1', col = 'green', main = paste("Mean of X1, sd of proposal = ", Sigma))
+
+x2_mean = cumsum(vec_sm[[1]][2,])/seq_along(vec_sm[[1]][2,])
+plot(seq_along(vec_sm[[1]][2,]), x2_mean, xlab = 'Time', ylab = 'Mean of X2', col = 'red', main = paste("Mean of X2, sd of proposal = ", Sigma))
+
+
 Sigma = 1
 fx_mean = cumsum(vec_sm[[2]])/seq_along(vec_sm[[2]])
 plot(seq_along(vec_sm[[2]]), fx_mean, xlab = 'Time', ylab = 'R0', col = 'red', main = paste("Mean of MCMC chain, True R0 = ",r0_true, ", sd of proposal = ", Sigma))
 
+#*******************************************************************
+#*Investigate Tuning parameters
+list_alpha = c(1.001, 1.01, 1.1, 2, 10)
+list_sigma = c(0.001,0.01, 0.1,1,2, 5, 10,100)
 
-#Plots
-
-x2 = seq(-2,1,length=5) 
-
-for (i in x2) {
-  print(i)
+#Function to inspect
+results_plot_ts_rate_acc = function(list_sigma, list_alpha, N){
+  #Params
+  vec_mean_rate_acc = vector('numeric', length(list_sigma))
+  par(mfrow=c(3,5))
+  for (sigma_j in list_sigma){
+    print('Sigma')
+    print(sigma_j)
+    rate_accept_sigma = 0
+    for (alpha_i in list_alpha){
+      print('Alpha')
+      print(alpha_i)
+      vec_sm = simulated_annealing_minimum_multi_param(N = N, x0=as.vector(c(0,0)), Sigma = diag(sigma_j, nrow =2), beta1 = 1, alpha = alpha_i)
+      plot.ts(vec_sm[[2]],  xlab = 't', ylab = 'f(Xt)',
+              cex.lab=1.5, col = 'orange')
+      rate_accept_sigma = rate_accept_sigma + vec_sm[[3]]
+    }
+    vec_mean_rate_acc[sigma_j] = rate_accept_sigma/length(list_alpha)
+  }
+  vec_mean_rate_acc
 }
 
-#Test
-u <- seq(-5, 5, by = .1)
-v <- seq(-5, 5, by = .1)
-M <- expand.grid(u,v)
-
-x <- M$Var1
-y <- M$Var2
-
-sigma <- matrix(c(1, .5, .5, 1), nrow = 2, byrow = TRUE)
-z <- dmvnorm(x = M, sigma = sigma)
-
-scatterplot3js(x, y, z, phi = 40, theta = 20,
-               color=rainbow(length(z)),
-               colkey = FALSE,
-               cex = .3,
-               main = "Bivariate Normal")
-
-scatterplot3js(X1, X2, z, phi = 40, theta = 20,
-               color=rainbow(length(z)),
-               colkey = FALSE,
-               cex = .3,
-               main = "f(x1, x2)")
-
-#Plots
-plot
-library(plotly)
-
-# Data: volcano is provided by plotly
-
-# Plot
-persp(X1, X2, fx[3,], 
-      xlab = "x1", ylab = "x2",
-      main = "f(x1, x2)"
-)
-
-library(rgl)
-library(plot3D)
-library(threejs)
-library(mvtnorm)
-
-surf3D(x = fx[1,], y = fx[2 ,], z = fx[3 ,], type = "surface")
-rglwidget(elementId = "plot3drgl")
-
-z = fx[3 ,]
-z = matrix(fx[3 ,], nrow = 1, ncol = len_x^2)
-fig <- plot_ly(x = fx[1,], y = fx[2 ,], z = z) %>% add_surface()
-
-fig
-
-
-#Other
-scatterplot3js(X1, X2, z, phi = 40, theta = 20,
-               color=rainbow(length(z)),
-               colkey = FALSE,
-               cex = .3,
-               axisLabels=c("x1", "x2", "f(x1, x2"),
-               main = "f(x1, x2)")
-
-#Check
-h = 0 
-for (i in c(1,2,3,4)) {
-  h[i] = i*2
-}
+#Apply
+N = 100000
+list_alpha = c(1.001, 1.01, 1.1, 2, 10)
+list_sigma1 = c(1, 2, 5) #Probably be enough c(0.001, 0.01, 0.1) #c(10, 100) #c(1, 2, 5) #c(0.001, 0.01, 0.1) #c(1, 2, 5) # #c(1, 10, 100) 
+rate_acc = results_plot_ts_rate_acc(list_sigma1, list_alpha, N)
