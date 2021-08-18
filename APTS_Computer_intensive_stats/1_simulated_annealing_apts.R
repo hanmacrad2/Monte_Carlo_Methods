@@ -98,9 +98,9 @@ x2_max
 #fx - Min point
 fx_min = min(fx_matrix[3,])
 fx_min
-x1_min = X1[which.min(fx_matrix[3,])]
+x1_min = fx_matrix[1,][which.min(fx_matrix[3,])]
 x1_min
-x2_min = X2[which.min(fx_matrix[3,])]
+x2_min = fx_matrix[2,][which.min(fx_matrix[3,])]
 x2_min
 
 
@@ -259,3 +259,17 @@ N = 100000
 list_alpha = c(1.001, 1.01, 1.1, 2, 10)
 list_sigma1 = c(1, 2, 5) #Probably be enough c(0.001, 0.01, 0.1) #c(10, 100) #c(1, 2, 5) #c(0.001, 0.01, 0.1) #c(1, 2, 5) # #c(1, 10, 100) 
 rate_acc = results_plot_ts_rate_acc(list_sigma1, list_alpha, N)
+
+
+#****************************************************************************************************************
+#*Part II 
+#*
+
+get_fxII = function(X){
+  
+  x_1 = X[1]
+  x_2 = X[2]
+  fx = (4 -2.1*x_1^2 + (x_1^4)/3)*x_1^2 + x_1*x_2 + 4*(x_2^2 -1)*x_2^2
+  
+  fx
+}
