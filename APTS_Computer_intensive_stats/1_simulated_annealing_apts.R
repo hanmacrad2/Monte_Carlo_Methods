@@ -148,42 +148,37 @@ simulated_annealing_multi = function(N = 2000, x0=as.vector(c(0,0)), Sigma = dia
 }
 
 #Simulated annealing to find the minimum of a multi paramater function
-simulated_annealing_minimum_multi_param = function(N = 10000, x0=as.vector(c(0,0)), Sigma = diag(1,nrow =2), beta1 = 1, alpha = 1.001){
+
+sim_anneal_minimum_multi_param = function(N = 10000, x0=as.vector(c(0,0)),
+                                          Sigma = diag(1,nrow =2), beta1 = 1, alpha = 1.001){
   
   X <- matrix(0, nrow=2, ncol= N)
   X[,1] <- x0
   x_current = X[,1]
   fx_current = get_fx(X)
   beta_current = beta1
-  fn = 0
-  count_accept = 0
-  count_na = 0 
+  fn = 0; count_accept = 0; count_na = 0 
   
   #Implement Markov Chain in loop 
   for (i in 1: N){
     
     x_new = x_current + mvrnorm(mu=as.vector(c(0,0)), Sigma=Sigma)
-    #print(x_new)
     fx_new = get_fx(x_new)
-    #Alpha
-    #alpha_accept = (fx_new/fx_current)^beta_current #alpha -acceptance probability
-    alpha_accept = exp(-beta_current*(fx_new - fx_current))#alpha -acceptance probability
-    
-    #Check
+    #Alpha - acceptance probability
+    alpha_accept = exp(-beta_current*(fx_new - fx_current))
+
     if (is.na(alpha_accept)){
       count_na = count_na + 1
     }
     
-    else if ((alpha_accept > runif(1)) & abs(x_new[1]) <= 3 & abs(x_new[2]) <= 2){ #Criterion for acceptance -
+    else if ((alpha_accept > runif(1)) & abs(x_new[1]) <= 3 & abs(x_new[2]) <= 2){ #Criterion for acceptance
       x_current <- x_new #If holds set next sample in the chain as the proposed sample
       fx_current <- fx_new
       count_accept = count_accept + 1
     }
-    X[i] = x_current #If not the next sample in the chain is again set to as the sample value at previous step
+    X[i] = x_current #Otherwise next sample remains the same 
     fn[i] = fx_current
     beta_current = beta_current*alpha #Update temperature/value of beta. 
-    
-    
   }
   #Print rates 
   rate_accept = count_accept/N
@@ -192,13 +187,11 @@ simulated_annealing_minimum_multi_param = function(N = 10000, x0=as.vector(c(0,0
   print('Rate accept')
   print(rate_accept)
   
-  print('count_na')
-  print(count_na)
-  
   list(X, fn, rate_accept)
 }
 
-
+print('count_na')
+print(count_na)
 #***************
 #Implement
 N = 10000
@@ -212,7 +205,7 @@ plot.ts(vec_sm[[1]][2,],
 
 #Plot Trace of fx
 plot.ts(vec_sm[[2]], 
-        xlab = 't', ylab = 'f(Xt)', main = 'Trace Plot of f(Xt)', cex.lab=1.5, col = 'blue')
+        xlab = 't', ylab = 'f(X1, X2)', main = 'Trace Plot of f(X1, X2)', cex.lab=1.5, col = 'blue')
 
 #Plot cumulative mean of x1, x2, f
 par(mfrow=c(2,1))
@@ -246,7 +239,9 @@ results_plot_ts_rate_acc = function(list_sigma, list_alpha, N){
       print(alpha_i)
       vec_sm = simulated_annealing_minimum_multi_param(N = N, x0=as.vector(c(0,0)), Sigma = diag(sigma_j, nrow =2), beta1 = 1, alpha = alpha_i)
       plot.ts(vec_sm[[2]],  xlab = 't', ylab = 'f(Xt)',
-              cex.lab=1.5, col = 'orange')
+              cex.lab=1.5, col = 'orange',
+              #main = expression(paste(sigma, "=" , sigma_j ~ alpha "=", alpha_i)))
+              main = bquote(sigma == ~.(sigma_j) ~ alpha == ~.(alpha_i)))
       rate_accept_sigma = rate_accept_sigma + vec_sm[[3]]
     }
     vec_mean_rate_acc[sigma_j] = rate_accept_sigma/length(list_alpha)
@@ -257,7 +252,7 @@ results_plot_ts_rate_acc = function(list_sigma, list_alpha, N){
 #Apply
 N = 100000
 list_alpha = c(1.001, 1.01, 1.1, 2, 10)
-list_sigma1 = c(1, 2, 5) #Probably be enough c(0.001, 0.01, 0.1) #c(10, 100) #c(1, 2, 5) #c(0.001, 0.01, 0.1) #c(1, 2, 5) # #c(1, 10, 100) 
+list_sigma1 = c(10, 100) #c(1, 2, 5) #c(0.001, 0.01, 0.1) # #Probably be enough c(0.001, 0.01, 0.1) #c(10, 100) #c(1, 2, 5) #c(0.001, 0.01, 0.1) #c(1, 2, 5) # #c(1, 10, 100) 
 rate_acc = results_plot_ts_rate_acc(list_sigma1, list_alpha, N)
 
 
@@ -269,7 +264,118 @@ get_fxII = function(X){
   
   x_1 = X[1]
   x_2 = X[2]
-  fx = (4 -2.1*x_1^2 + (x_1^4)/3)*x_1^2 + x_1*x_2 + 4*(x_2^2 -1)*x_2^2
+  fx = exp(sin(50*x_1)) + sin(60*exp(x_2)) + sin(70*sin(x_1)) + sin(sin(80*x2)) - sin(10(x_1 + x_2)) + 0.25*(x_1^2 + x_2^2)
   
   fx
 }
+
+#Function v2
+get_fx_matrix_II = function(len_x = 100){
+  
+  #Matrix
+  X1 = seq(-pi/2, pi/2,length=len_x) 
+  X2 = seq(-pi/2, pi/2,length=len_x) 
+  fx = matrix(0, nrow = 3, ncol = len_x^2)
+  count = 1 
+  
+  while (count <= len_x) {
+    for (x_1 in X1) {
+      for (x_2 in X2){
+        fx[1, count] = x_1
+        fx[2, count] = x_2
+        fx[3, count] = exp(sin(50*x_1)) + sin(60*exp(x_2)) + sin(70*sin(x_1)) + sin(sin(80*x_2)) - sin(10*(x_1 + x_2)) + 0.25*(x_1^2 + x_2^2)
+        
+        count = count + 1
+        
+      }
+    } 
+  }
+  
+  
+  fx
+}
+
+#apply to get fx
+fx_matrix = get_fx_matrix_II()
+#Plot
+scatterplot3js(fx_matrix[1,], fx_matrix[2,], fx_matrix[3,], phi = 40, theta = 20,
+               color=rainbow(length(z)),
+               colkey = FALSE,
+               cex = .3,
+               main = "f(x1, x2)")
+
+#fx - Min point
+fx_min = min(fx_matrix[3,])
+fx_min
+x1_min = fx_matrix[1,][which.min(fx_matrix[3,])]
+x1_min
+x2_min = fx_matrix[2,][which.min(fx_matrix[3,])]
+x2_min
+
+#**************************************************
+#*Simulated Annealing Function II
+#*
+
+simulated_annealing_minimum_multi_param_II = function(N = 10000, x0=as.vector(c(0,0)), Sigma = diag(1,nrow =2), beta1 = 1, alpha = 1.001){
+  
+  X <- matrix(0, nrow=2, ncol= N)
+  X[,1] <- x0
+  x_current = X[,1]
+  fx_current = get_fxII(X)
+  beta_current = beta1
+  fn = 0
+  count_accept = 0
+  count_na = 0 
+  
+  #Implement Markov Chain in loop 
+  for (i in 1: N){
+    
+    x_new = x_current + mvrnorm(mu=as.vector(c(0,0)), Sigma=Sigma)
+    #print(x_new)
+    fx_new = get_fxII(x_new)
+    #Alpha
+    #alpha_accept = (fx_new/fx_current)^beta_current #alpha -acceptance probability
+    alpha_accept = exp(-beta_current*(fx_new - fx_current))#alpha -acceptance probability
+    
+    #Check
+    if (is.na(alpha_accept)){
+      count_na = count_na + 1
+    }
+    
+    else if ((alpha_accept > runif(1)) & abs(x_new[1]) <= 3 & abs(x_new[2]) <= 2){ #Criterion for acceptance -
+      x_current <- x_new #If holds set next sample in the chain as the proposed sample
+      fx_current <- fx_new
+      count_accept = count_accept + 1
+    }
+    X[i] = x_current #If not the next sample in the chain is again set to as the sample value at previous step
+    fn[i] = fx_current
+    beta_current = beta_current*alpha #Update temperature/value of beta. 
+    
+    
+  }
+  #Print rates 
+  rate_accept = count_accept/N
+  print('count accept')
+  print(count_accept)
+  print('Rate accept')
+  print(rate_accept)
+  
+  print('count_na')
+  print(count_na)
+  
+  list(X, fn, rate_accept)
+}
+
+#Apply
+N = 10000
+vec_sm = simulated_annealing_minimum_multi_param_II(N)
+head(vec_sm[1])
+#Plot trace of X
+plot.ts(vec_sm[[1]][1,], 
+        xlab = 't', ylab = 'X1', col = 'green',main = 'Trace Plot of X1', cex.lab=1.5)
+plot.ts(vec_sm[[1]][2,], 
+        xlab = 't', ylab = 'X2', col = 'red', main = 'Trace Plot of X2', cex.lab=1.5)
+
+#Plot Trace of fx
+plot.ts(vec_sm[[2]], 
+        xlab = 't', ylab = 'f(Xt)', main = 'Trace Plot of f(Xt)', cex.lab=1.5, col = 'blue')
