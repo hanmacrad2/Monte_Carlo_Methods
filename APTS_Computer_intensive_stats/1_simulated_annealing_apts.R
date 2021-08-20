@@ -1,6 +1,5 @@
-#APTS
+#APTS Computer Intensive Stats SImulated Annealing
 library(MASS)
-
 
 #Question 1: Density
 get_fx = function(X){

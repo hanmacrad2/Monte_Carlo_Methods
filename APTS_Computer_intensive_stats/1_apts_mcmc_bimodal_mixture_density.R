@@ -40,7 +40,7 @@ get_multi_mode_density = function(x){
 #*******************************************************
 #Part 1: Random Walk Metropolis
 
-rwm = function(sigma, N = 100000, x0 = 1){
+random_walk_metropolis = function(sigma, N = 100000, x0 = 1){
   
   #Vectors to store samples
   X = vector('numeric', N)
@@ -52,18 +52,20 @@ rwm = function(sigma, N = 100000, x0 = 1){
     u = runif(1)
     
     if(u > (get_multi_mode_density(X[t])/get_multi_mode_density(X[t-1]))) { #Criterion for rejection 
-      X[t] = X[t-1] #If criterion for acceptance is not met the next sample in chain is set to current sample
+      X[t] = X[t-1] #If criterion not met the next sample <- current sample
       count_accept = count_accept + 1
     }
   }
-  print(count_accept)
+  print('count_accept')
   print(count_accept/N)
-  X #list(X, count_accept) #Return samples and count of accepted values 
+  X  
 }
+
+#list(X, count_accept) #Return samples and count of accepted values
 
 #Apply
 start_time = Sys.time()
-X_rw = rwm(sigma = 5.0)
+X_rw = random_walk_metropolis(sigma = 5.0)
 end_time = Sys.time()
 time_elapsed = end_time - start_time
 time_elapsed
@@ -81,7 +83,7 @@ print(hist_rw)
 #*******************************************************
 #Part 1: Slice Sampler 
 
-slice_sampler_metropolis = function(N = 100000, sigma = 1.0, x0 = 0){
+slice_sampler_metropolised = function(N = 100000, sigma = 2.0, x0 = 0){
   
   #x- markov chain
   x = vector('numeric', N)
@@ -99,7 +101,7 @@ slice_sampler_metropolis = function(N = 100000, sigma = 1.0, x0 = 0){
     x[t] = x[t-1] + rnorm(1, mean = 0, sd= sigma)
     
     #Using augmented distribution f(x,u) 
-    if(u[t] > get_multi_mode_density(x[t])) {          #Rejection criterion
+    if(u[t] > get_multi_mode_density(x[t])) { #Rejection criterion
       x[t] = x[t-1]
       count_accept = count_accept - 1 
     }
@@ -110,7 +112,7 @@ slice_sampler_metropolis = function(N = 100000, sigma = 1.0, x0 = 0){
 
 #Time it
 start_time = Sys.time()
-X_ss = slice_sampler_metropolis()
+X_ss = slice_sampler_metropolised()
 end_time = Sys.time()
 time_elapsed = end_time - start_time
 time_elapsed
@@ -129,31 +131,31 @@ print(hist_ss)
 #**********************************
 #Part 3 Metropolised 
 
-slice_sampler = function(sigma, Ns = 100000, w = 0.5, x0 = 1.0){
+slice_sampler = function(Ns = 5000, w = 0.5, x0 = 1.0){
   
   #Initialise variables
   xs = vector('numeric', Ns)
-  x_current = x0
+  x_current = x0; count_accept = 0 
   
   #Iterations
   for (i in 1: Ns) {
-    y = runif(1, 0, get_fx(x_current)) #uniform sample
+    y = runif(1, 0, get_multi_mode_density(x_current)) #uniform sample
     lb = x_current #Left bound
     rb = x_current #Right bound
     
-    #interval w is randomly positioned around x0
+    #Interval w is randomly positioned around x0
     #Expanded in steps of size w until both ends are outside the slice
-    while (y < get_fx(lb)) {
+    while (y < get_multi_mode_density(lb)) {
       lb = lb - w
     }
-    while (y < get_fx(rb)) {
+    while (y < get_multi_mode_density(rb)) {
       rb = rb + w
     }
     
-    #x _new - uniformly pick point from interval until a point inside the slice is found
+    #X _new - uniformly pick point from interval until a point inside the slice is found
     x_new = runif(1, lb, rb)
     #Points picked that are outside the slice are used to shrink the interval.
-    if (y > get_fx(x_new)) {
+    if (y > get_multi_mode_density(x_new)) {
       if (abs(x_new - lb) < abs(x_new - rb)) {
         lb = x_new
       } else {
@@ -162,17 +164,18 @@ slice_sampler = function(sigma, Ns = 100000, w = 0.5, x0 = 1.0){
     }
     else {
       x_current = x_new #Set new value of x to current value
-      
+      count_accept = count_accept + 1
     }
     xs[i] = x_current    #Include current x as a sample
   }
-  
+  print('count_accept')
+  print(count_accept)
   xs
 }
 
 #Time it
 start_time = Sys.time()
-X_ssr = slice_sampler(2.0)
+X_ssr = slice_sampler()
 end_time = Sys.time()
 time_elapsed = end_time - start_time
 time_elapsed
